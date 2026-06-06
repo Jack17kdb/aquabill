@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { gsap } from 'gsap';
 import useAuthStore from '../store/auth.store.js';
@@ -32,39 +32,83 @@ const NavIcon = ({ name, className = 'w-5 h-5' }) => {
 // ── Mobile retractable drawer ──────────────────────────────────────
 function MobileDrawer({ navItems, onLogout, user }) {
   const [open, setOpen]   = useState(false);
-  const drawerRef  = useRef(null);
-  const overlayRef = useRef(null);
-  const location   = useLocation();
+  const drawerRef         = useRef(null);
+  const overlayRef        = useRef(null);
+  const isAnimatingRef    = useRef(false);   // prevent animation overlap
+  const isMountedRef      = useRef(true);    // guard post-unmount state updates
+  const location          = useLocation();
 
-  useEffect(() => { if (open) close(); }, [location.pathname]);
-
-  const [shouldAnimate, setShouldAnimate] = useState(false);
-
+  // ── Mark unmounted so async callbacks never fire after cleanup ──
   useEffect(() => {
-    if (shouldAnimate && open && drawerRef.current && overlayRef.current) {
-      gsap.fromTo(overlayRef.current,
-        { opacity: 0 },
-        { opacity: 1, duration: 0.25, ease: 'power2.out' }
-      );
-      gsap.fromTo(drawerRef.current,
-        { y: '100%' },
-        { y: '0%', duration: 0.35, ease: 'power3.out' }
-      );
-      setShouldAnimate(false);
+    isMountedRef.current = true;
+    return () => { isMountedRef.current = false; };
+  }, []);
+
+  // ── Set drawer's initial off-screen position BEFORE first paint ──
+  // The drawer is ALWAYS mounted; GSAP is the sole owner of its transform.
+  useLayoutEffect(() => {
+    if (drawerRef.current) {
+      gsap.set(drawerRef.current, { yPercent: 100 });
     }
-  }, [open, shouldAnimate]);
+    if (overlayRef.current) {
+      gsap.set(overlayRef.current, { opacity: 0, pointerEvents: 'none' });
+    }
+  }, []);
+
+  // ── Close on route change ───────────────────────────────────────
+  useEffect(() => {
+    if (open) closeDrawer();
+  }, [location.pathname]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const openDrawer = () => {
+    if (isAnimatingRef.current) return;
+    if (!drawerRef.current || !overlayRef.current) return;
+
+    isAnimatingRef.current = true;
     setOpen(true);
-    setShouldAnimate(true);
+
+    gsap.set(overlayRef.current, { pointerEvents: 'auto' });
+    gsap.to(overlayRef.current, {
+      opacity: 1,
+      duration: 0.25,
+      ease: 'power2.out',
+    });
+
+    gsap.to(drawerRef.current, {
+      yPercent: 0,
+      duration: 0.35,
+      ease: 'power3.out',
+      onComplete: () => { isAnimatingRef.current = false; },
+    });
   };
 
-  const close = () => {
-    if (!drawerRef.current) { setOpen(false); return; }
-    gsap.to(overlayRef.current, { opacity: 0, duration: 0.2 });
+  const closeDrawer = () => {
+    if (!drawerRef.current || !overlayRef.current) {
+      setOpen(false);
+      return;
+    }
+    if (isAnimatingRef.current) return;
+
+    isAnimatingRef.current = true;
+
+    gsap.to(overlayRef.current, {
+      opacity: 0,
+      duration: 0.2,
+      onComplete: () => {
+        if (overlayRef.current) {
+          gsap.set(overlayRef.current, { pointerEvents: 'none' });
+        }
+      },
+    });
+
     gsap.to(drawerRef.current, {
-      y: '100%', duration: 0.28, ease: 'power2.in',
-      onComplete: () => setOpen(false)
+      yPercent: 100,
+      duration: 0.28,
+      ease: 'power2.in',
+      onComplete: () => {
+        isAnimatingRef.current = false;
+        if (isMountedRef.current) setOpen(false);
+      },
     });
   };
 
@@ -77,7 +121,7 @@ function MobileDrawer({ navItems, onLogout, user }) {
       {/* ── Handle bar ───────────────────────────────────────────── */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur-md border-t border-slate-800">
         <button
-          onClick={open ? close : openDrawer}
+          onClick={open ? closeDrawer : openDrawer}
           className="w-full flex items-center justify-between px-5 py-3.5 active:bg-slate-800/60 transition-colors"
         >
           <div className="flex items-center gap-3">
@@ -105,79 +149,84 @@ function MobileDrawer({ navItems, onLogout, user }) {
         </button>
       </div>
 
-      {/* ── Overlay ──────────────────────────────────────────────── */}
-      {open && (
-        <div
-          ref={overlayRef}
-          className="lg:hidden fixed inset-0 bg-black/60 z-40"
-          style={{ opacity: 0 }}
-          onClick={close}
-        />
-      )}
+      {/* ── Overlay — always mounted, opacity controlled by GSAP ─── */}
+      {/* z-index 45: above handle (40) but below drawer (50)        */}
+      <div
+        ref={overlayRef}
+        className="lg:hidden fixed inset-0 bg-black/60"
+        style={{ zIndex: 45, opacity: 0, pointerEvents: 'none' }}
+        onClick={closeDrawer}
+      />
 
-      {/* ── Sliding drawer ───────────────────────────────────────── */}
-      {open && (
-        <div
-          ref={drawerRef}
-          className="lg:hidden fixed left-0 right-0 z-50 bg-slate-900 border-t border-slate-700/80 rounded-t-2xl overflow-y-auto"
-          style={{ transform: 'translateY(100%)', bottom: '56px', maxHeight: 'calc(100vh - 56px - 32px)' }}
-        >
-          {/* Drag handle pill */}
-          <div className="flex justify-center pt-3 pb-1">
-            <div className="w-10 h-1 rounded-full bg-slate-700"/>
-          </div>
-
-          {/* User info */}
-          <div className="px-5 py-3 border-b border-slate-800/80">
-            <p className="text-xs text-slate-500 font-mono truncate">{user?.email}</p>
-            <p className="text-xs text-violet-400 font-display font-semibold mt-0.5">Super Administrator</p>
-          </div>
-
-          {/* Nav items */}
-          <nav className="px-3 py-3 flex flex-col gap-1">
-            {navItems.map(item => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.end}
-                className={({ isActive }) =>
-                  `flex items-center gap-4 px-4 py-3.5 rounded-xl transition-all font-display font-medium text-sm ${
-                    isActive
-                      ? 'bg-violet-500/15 text-violet-400 border border-violet-500/30'
-                      : 'text-slate-300 hover:text-white hover:bg-slate-800/70'
-                  }`
-                }
-              >
-                {({ isActive }) => (
-                  <>
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                      isActive ? 'bg-violet-500/20' : 'bg-slate-800'
-                    }`}>
-                      <NavIcon name={item.icon} className="w-4 h-4" />
-                    </div>
-                    {item.label}
-                  </>
-                )}
-              </NavLink>
-            ))}
-          </nav>
-
-          {/* Logout */}
-          <div className="px-3 pb-5 pt-1 border-t border-slate-800/80 mt-1">
-            <button
-              onClick={() => { close(); setTimeout(onLogout, 300); }}
-              className="w-full flex items-center gap-4 px-4 py-3.5 rounded-xl text-red-400 hover:bg-red-900/20 transition-all font-display font-medium text-sm"
-            >
-              <div className="w-8 h-8 rounded-lg bg-red-900/30 flex items-center justify-center">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
-                </svg>
-              </div>
-              Logout
-            </button>
-          </div>
+      {/*
+        ── Sliding drawer — always mounted, transform owned by GSAP ─
+        KEY LAYOUT DECISIONS:
+        • bottom: 56px  → sits flush above the handle bar; grows upward
+        • max-height    → caps at 75vh so it never overflows the screen
+        • overflow-y-auto → scroll inside when content exceeds max-height
+        • NO inline transform → GSAP owns yPercent exclusively
+        • z-index 50    → above overlay (45) and handle (40)
+      */}
+      <div
+        ref={drawerRef}
+        className="lg:hidden fixed left-0 right-0 z-50 bg-slate-900 border-t border-slate-700/80 rounded-t-2xl overflow-y-auto"
+        style={{ bottom: '56px', maxHeight: 'calc(75vh)' }}
+      >
+        {/* Drag handle pill */}
+        <div className="flex justify-center pt-3 pb-1">
+          <div className="w-10 h-1 rounded-full bg-slate-700"/>
         </div>
-      )}
+
+        {/* User info */}
+        <div className="px-5 py-3 border-b border-slate-800/80">
+          <p className="text-xs text-slate-500 font-mono truncate">{user?.email}</p>
+          <p className="text-xs text-violet-400 font-display font-semibold mt-0.5">Super Administrator</p>
+        </div>
+
+        {/* Nav items */}
+        <nav className="px-3 py-3 flex flex-col gap-1">
+          {navItems.map(item => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              end={item.end}
+              className={({ isActive }) =>
+                `flex items-center gap-4 px-4 py-3.5 rounded-xl transition-all font-display font-medium text-sm ${
+                  isActive
+                    ? 'bg-violet-500/15 text-violet-400 border border-violet-500/30'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-800/70'
+                }`
+              }
+            >
+              {({ isActive }) => (
+                <>
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                    isActive ? 'bg-violet-500/20' : 'bg-slate-800'
+                  }`}>
+                    <NavIcon name={item.icon} className="w-4 h-4" />
+                  </div>
+                  {item.label}
+                </>
+              )}
+            </NavLink>
+          ))}
+        </nav>
+
+        {/* Logout */}
+        <div className="px-3 pb-5 pt-1 border-t border-slate-800/80 mt-1">
+          <button
+            onClick={() => { closeDrawer(); setTimeout(onLogout, 300); }}
+            className="w-full flex items-center gap-4 px-4 py-3.5 rounded-xl text-red-400 hover:bg-red-900/20 transition-all font-display font-medium text-sm"
+          >
+            <div className="w-8 h-8 rounded-lg bg-red-900/30 flex items-center justify-center">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+              </svg>
+            </div>
+            Logout
+          </button>
+        </div>
+      </div>
     </>
   );
 }
