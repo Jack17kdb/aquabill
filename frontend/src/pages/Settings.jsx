@@ -181,19 +181,6 @@ export default function Settings() {
           </div>
         </div>
 
-        {/* WhatsApp config */}
-        <div className="card p-5">
-          <h2 className="font-display font-semibold text-white mb-1">WhatsApp Integration</h2>
-          <p className="text-sm text-slate-500 mb-4">
-            Configured in <code className="bg-slate-800 px-1.5 py-0.5 rounded font-mono text-xs text-ocean-400">backend/.env</code>
-          </p>
-          <div className="bg-slate-800/60 rounded-xl p-4 font-mono text-sm text-slate-400 border border-slate-700 space-y-1">
-            <div className="text-ocean-400 mb-1"># Meta WhatsApp Cloud API</div>
-            <div>META_PHONE_NUMBER_ID=<span className="text-slate-500">your_phone_number_id</span></div>
-            <div>META_ACCESS_TOKEN=<span className="text-slate-500">your_permanent_access_token</span></div>
-          </div>
-        </div>
-
         {/* Account info */}
         <div className="card p-5 border-slate-700/30">
           <h2 className="font-display font-semibold text-white mb-1">Account</h2>

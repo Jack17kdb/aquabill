@@ -110,7 +110,7 @@ function MobileDrawer({ navItems, onLogout, user }) {
       {open && (
         <div
           ref={drawerRef}
-          className="lg:hidden fixed bottom-[56px] left-0 right-0 z-50 bg-slate-900 border-t border-slate-700/80 rounded-t-2xl overflow-hidden"
+          className="lg:hidden fixed bottom-[56px] left-0 right-0 z-50 bg-slate-900 border-t border-slate-700/80 rounded-t-2xl overflow-y-auto max-h-[70vh]"
           style={{ transform: 'translateY(100%)' }}
         >
           {/* Drag handle pill */}
