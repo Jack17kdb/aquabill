@@ -55,18 +55,25 @@ function MobileDrawer({ navItems, onNavigate, onLogout, user }) {
   // Close drawer on route change
   useEffect(() => { if (open) close(); }, [location.pathname]);
 
+  const [shouldAnimate, setShouldAnimate] = useState(false);
+
+  useEffect(() => {
+    if (shouldAnimate && open && drawerRef.current && overlayRef.current) {
+      gsap.fromTo(overlayRef.current,
+        { opacity: 0 },
+        { opacity: 1, duration: 0.25, ease: 'power2.out' }
+      );
+      gsap.fromTo(drawerRef.current,
+        { y: '100%' },
+        { y: '0%', duration: 0.35, ease: 'power3.out' }
+      );
+      setShouldAnimate(false);
+    }
+  }, [open, shouldAnimate]);
+
   const openDrawer = () => {
     setOpen(true);
-    // Animate overlay in
-    gsap.fromTo(overlayRef.current,
-      { opacity: 0 },
-      { opacity: 1, duration: 0.25, ease: 'power2.out' }
-    );
-    // Slide drawer up
-    gsap.fromTo(drawerRef.current,
-      { y: '100%' },
-      { y: '0%', duration: 0.35, ease: 'power3.out' }
-    );
+    setShouldAnimate(true);
   };
 
   const close = () => {
@@ -129,8 +136,8 @@ function MobileDrawer({ navItems, onNavigate, onLogout, user }) {
       {open && (
         <div
           ref={drawerRef}
-          className="lg:hidden fixed bottom-[56px] left-0 right-0 z-50 bg-slate-900 border-t border-slate-700/80 rounded-t-2xl overflow-y-auto max-h-[70vh]"
-          style={{ transform: 'translateY(100%)' }}
+          className="lg:hidden fixed left-0 right-0 z-50 bg-slate-900 border-t border-slate-700/80 rounded-t-2xl overflow-y-auto"
+          style={{ transform: 'translateY(100%)', bottom: '56px', maxHeight: 'calc(100vh - 56px - 32px)' }}
         >
           {/* Drag handle pill */}
           <div className="flex justify-center pt-3 pb-1">
