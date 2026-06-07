@@ -59,7 +59,7 @@ function MobileDrawer({ navItems, onNavigate, onLogout, user }) {
   }, []);
 
   useLayoutEffect(() => {
-    if (drawerRef.current)  gsap.set(drawerRef.current,  { yPercent: 100 });
+    if (drawerRef.current)  gsap.set(drawerRef.current,  { xPercent: -100 });
     if (overlayRef.current) gsap.set(overlayRef.current, { opacity: 0, pointerEvents: 'none' });
   }, []);
 
@@ -80,8 +80,8 @@ function MobileDrawer({ navItems, onNavigate, onLogout, user }) {
     gsap.set(overlayRef.current, { pointerEvents: 'auto' });
     gsap.to(overlayRef.current, { opacity: 1, duration: 0.25, ease: 'power2.out' });
     gsap.to(drawerRef.current, {
-      yPercent: 0,
-      duration: 0.35,
+      xPercent: 0,
+      duration: 0.3,
       ease: 'power3.out',
       onComplete: () => { isAnimatingRef.current = false; },
     });
@@ -107,8 +107,8 @@ function MobileDrawer({ navItems, onNavigate, onLogout, user }) {
       },
     });
     gsap.to(drawerRef.current, {
-      yPercent: 100,
-      duration: 0.28,
+      xPercent: -100,
+      duration: 0.25,
       ease: 'power2.in',
       onComplete: () => {
         isAnimatingRef.current = false;
@@ -116,7 +116,6 @@ function MobileDrawer({ navItems, onNavigate, onLogout, user }) {
     });
   };
 
-  // FIX: exact match first, then prefix only for non-root paths
   const activeItem = navItems.find(i => {
     if (location.pathname === i.to) return true;
     if (i.to !== '/' && location.pathname.startsWith(i.to + '/')) return true;
@@ -125,93 +124,110 @@ function MobileDrawer({ navItems, onNavigate, onLogout, user }) {
 
   return (
     <>
-      {/* Handle bar */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur-md border-t border-slate-800">
-        <button
-          onClick={open ? closeDrawer : openDrawer}
-          className="w-full flex items-center justify-between px-5 py-3.5 active:bg-slate-800/60 transition-colors"
-        >
-          <div className="flex items-center gap-3">
-            {activeItem && (
-              <div className="w-7 h-7 rounded-lg bg-ocean-500/20 border border-ocean-500/30 flex items-center justify-center">
-                <NavIcon name={activeItem.icon} className="w-4 h-4 text-ocean-400" />
-              </div>
-            )}
-            <span className="font-display font-semibold text-white text-sm">
-              {activeItem?.label || 'Menu'}
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-500 font-display">{open ? 'Close' : 'Menu'}</span>
-            <svg
-              className={`w-5 h-5 text-slate-400 transition-transform duration-300 ${open ? 'rotate-180' : ''}`}
-              fill="none" stroke="currentColor" viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 15l7-7 7 7"/>
+      {/* Top sticky navigation toolbar for mobile viewports */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 h-16 z-40 bg-slate-900 border-b border-slate-800 px-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-ocean-500/20 border border-ocean-500/30 flex items-center justify-center">
+            <svg className="w-4 h-4 text-ocean-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 2C12 2 5 10 5 15a7 7 0 0014 0C19 10 12 2 12 2z"/>
             </svg>
           </div>
+          <span className="font-display font-bold text-white text-base">
+            {activeItem?.label || 'AquaBill'}
+          </span>
+        </div>
+
+        <button
+          onClick={openDrawer}
+          className="w-10 h-10 rounded-xl bg-slate-800/50 flex items-center justify-center border border-slate-700/50 active:bg-slate-800"
+          aria-label="Open menu"
+        >
+          <svg className="w-5 h-5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
         </button>
       </div>
 
-      {/* Overlay */}
+      {/* Screen blocker background shading overlay layer */}
       <div
         ref={overlayRef}
-        className="lg:hidden fixed inset-0 bg-black/60"
-        style={{ zIndex: 45, opacity: 0, pointerEvents: 'none' }}
+        className="lg:hidden fixed inset-0 bg-black/60 z-45"
+        style={{ opacity: 0, pointerEvents: 'none' }}
         onClick={closeDrawer}
       />
 
-      {/* Drawer — GSAP owns yPercent, never set inline transform */}
+      {/* Left retracting vertical sidebar drawer layout */}
       <div
         ref={drawerRef}
-        className="lg:hidden fixed left-0 right-0 z-50 bg-slate-900 border-t border-slate-700/80 rounded-t-2xl overflow-y-auto"
-        style={{
-          bottom: '56px',
-          maxHeight: 'calc(75vh)',
-          paddingBottom: 'env(safe-area-inset-bottom, 0px)'
-        }}
+        className="lg:hidden fixed inset-y-0 left-0 w-72 max-w-[80vw] z-50 bg-slate-900 border-r border-slate-800 flex flex-col justify-between shadow-2xl"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)', paddingTop: 'env(safe-area-inset-top, 0px)' }}
       >
-        <div className="flex justify-center pt-3 pb-1">
-          <div className="w-10 h-1 rounded-full bg-slate-700"/>
-        </div>
+        <div>
+          {/* Header context area inside sidebar panel overlay */}
+          <div className="flex items-center justify-between p-4 border-b border-slate-800">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-ocean-500/20 border border-ocean-500/30 flex items-center justify-center">
+                <svg className="w-4 h-4 text-ocean-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 2C12 2 5 10 5 15a7 7 0 0014 0C19 10 12 2 12 2z"/>
+                </svg>
+              </div>
+              <div>
+                <div className="font-display font-bold text-white text-sm">AquaBill</div>
+                <div className="text-[10px] text-slate-500 font-mono">v1.0</div>
+              </div>
+            </div>
 
-        <div className="px-5 py-3 border-b border-slate-800/80">
-          <p className="text-xs text-slate-500 font-mono truncate">{user?.email}</p>
-          <p className="text-xs text-slate-600 mt-0.5">{user?.houseName || 'Admin'}</p>
-        </div>
-
-        <nav className="px-3 py-3 flex flex-col gap-1">
-          {navItems.map(item => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              onClick={() => { onNavigate?.(); closeDrawer(); }}
-              className={({ isActive }) =>
-                `flex items-center gap-4 px-4 py-3.5 rounded-xl transition-all font-display font-medium text-sm ${
-                  isActive
-                    ? 'bg-ocean-500/15 text-ocean-400 border border-ocean-500/30'
-                    : 'text-slate-300 hover:text-white hover:bg-slate-800/70'
-                }`
-              }
+            <button
+              onClick={closeDrawer}
+              className="w-8 h-8 rounded-lg bg-slate-800/40 flex items-center justify-center border border-slate-700/40"
             >
-              {({ isActive }) => (
-                <>
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                    isActive ? 'bg-ocean-500/20' : 'bg-slate-800'
-                  }`}>
-                    <NavIcon name={item.icon} className="w-4 h-4" />
-                  </div>
-                  {item.label}
-                </>
-              )}
-            </NavLink>
-          ))}
-        </nav>
+              <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
 
-        <div className="px-3 pb-5 pt-1 border-t border-slate-800/80 mt-1">
+          {/* User profile contextual panel block */}
+          <div className="px-4 py-3 bg-slate-950/40 border-b border-slate-800/80">
+            <p className="text-xs text-slate-400 font-mono truncate">{user?.email}</p>
+            <p className="text-[11px] text-slate-500 mt-0.5">{user?.houseName || 'Admin'}</p>
+          </div>
+
+          {/* Navigational route listings inside menu */}
+          <nav className="p-3 flex flex-col gap-1">
+            {navItems.map(item => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                onClick={() => { onNavigate?.(); closeDrawer(); }}
+                className={({ isActive }) =>
+                  `flex items-center gap-4 px-4 py-3 rounded-xl transition-all font-display font-medium text-sm ${
+                    isActive
+                      ? 'bg-ocean-500/15 text-ocean-400 border border-ocean-500/30'
+                      : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
+                  }`
+                }
+              >
+                {({ isActive }) => (
+                  <>
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                      isActive ? 'bg-ocean-500/20' : 'bg-slate-800'
+                    }`}>
+                      <NavIcon name={item.icon} className="w-4 h-4" />
+                    </div>
+                    {item.label}
+                  </>
+                )}
+              </NavLink>
+            ))}
+          </nav>
+        </div>
+
+        {/* Footer account disconnect controls trigger menu view segment */}
+        <div className="p-3 border-t border-slate-800/80">
           <button
             onClick={() => { closeDrawer(); onLogout(); }}
-            className="w-full flex items-center gap-4 px-4 py-3.5 rounded-xl text-red-400 hover:bg-red-900/20 transition-all font-display font-medium text-sm"
+            className="w-full flex items-center gap-4 px-4 py-3 rounded-xl text-red-400 hover:bg-red-900/20 transition-all font-display font-medium text-sm"
           >
             <div className="w-8 h-8 rounded-lg bg-red-900/30 flex items-center justify-center">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -246,7 +262,7 @@ export default function Layout() {
   ];
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen overflow-hidden bg-slate-950">
       {/* Desktop sidebar */}
       <aside className="hidden lg:flex flex-col w-64 bg-slate-900/50 border-r border-slate-800/80 p-4 gap-2 flex-shrink-0">
         <div className="flex items-center gap-3 px-2 py-3 mb-4">
@@ -294,7 +310,8 @@ export default function Layout() {
 
       <MobileDrawer navItems={navItems} onLogout={handleLogout} user={user} />
 
-      <main className="flex-1 overflow-y-auto pb-20 lg:pb-0">
+      {/* Main layout wrapper configuration adjusted for mobile toolbar top row stack spacing */}
+      <main className="flex-1 overflow-y-auto pt-16 lg:pt-0">
         <div className="max-w-5xl mx-auto px-4 py-6 page-enter">
           <Outlet />
         </div>
