@@ -45,54 +45,42 @@ const NavIcon = ({ name, className = 'w-5 h-5' }) => {
   return icons[name] || null;
 };
 
-// ── Mobile retractable drawer ──────────────────────────────────────
 function MobileDrawer({ navItems, onNavigate, onLogout, user }) {
-  const [open, setOpen]   = useState(false);
-  const drawerRef         = useRef(null);
-  const overlayRef        = useRef(null);
-  const isAnimatingRef    = useRef(false);   // prevent animation overlap
-  const isMountedRef      = useRef(true);    // guard post-unmount state updates
-  const location          = useLocation();
+  const [open, setOpen]        = useState(false);
+  const drawerRef              = useRef(null);
+  const overlayRef             = useRef(null);
+  const isAnimatingRef         = useRef(false);
+  const isMountedRef           = useRef(true);
+  const location               = useLocation();
 
-  // ── Mark unmounted so async callbacks never fire after cleanup ──
   useEffect(() => {
     isMountedRef.current = true;
     return () => { isMountedRef.current = false; };
   }, []);
 
-  // ── Set drawer's initial off-screen position BEFORE first paint ──
-  // This replaces the inline style={{ transform }} that fought with GSAP.
-  // The drawer is ALWAYS mounted; GSAP is the sole owner of its transform.
   useLayoutEffect(() => {
-    if (drawerRef.current) {
-      gsap.set(drawerRef.current, { yPercent: 100 });
-    }
-    if (overlayRef.current) {
-      gsap.set(overlayRef.current, { opacity: 0, pointerEvents: 'none' });
-    }
+    if (drawerRef.current)  gsap.set(drawerRef.current,  { yPercent: 100 });
+    if (overlayRef.current) gsap.set(overlayRef.current, { opacity: 0, pointerEvents: 'none' });
   }, []);
 
-  // ── Close on route change ───────────────────────────────────────
+  // Close on route change
   useEffect(() => {
     if (open) closeDrawer();
   }, [location.pathname]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const openDrawer = () => {
-    if (isAnimatingRef.current) return;
+    // FIX: guard both open state AND animation state
+    if (open || isAnimatingRef.current) return;
     if (!drawerRef.current || !overlayRef.current) return;
 
     isAnimatingRef.current = true;
     setOpen(true);
 
-    // Show overlay
-    gsap.set(overlayRef.current, { pointerEvents: 'auto' });
-    gsap.to(overlayRef.current, {
-      opacity: 1,
-      duration: 0.25,
-      ease: 'power2.out',
-    });
+    // FIX: kill any in-progress tweens before starting new ones
+    gsap.killTweensOf([drawerRef.current, overlayRef.current]);
 
-    // Slide drawer up from off-screen
+    gsap.set(overlayRef.current, { pointerEvents: 'auto' });
+    gsap.to(overlayRef.current, { opacity: 1, duration: 0.25, ease: 'power2.out' });
     gsap.to(drawerRef.current, {
       yPercent: 0,
       duration: 0.35,
@@ -102,24 +90,25 @@ function MobileDrawer({ navItems, onNavigate, onLogout, user }) {
   };
 
   const closeDrawer = () => {
+    // FIX: guard — only close if actually open
+    if (!open || isAnimatingRef.current) return;
     if (!drawerRef.current || !overlayRef.current) {
       setOpen(false);
       return;
     }
-    if (isAnimatingRef.current) return;
 
     isAnimatingRef.current = true;
+
+    // FIX: kill any in-progress tweens before starting close
+    gsap.killTweensOf([drawerRef.current, overlayRef.current]);
 
     gsap.to(overlayRef.current, {
       opacity: 0,
       duration: 0.2,
       onComplete: () => {
-        if (overlayRef.current) {
-          gsap.set(overlayRef.current, { pointerEvents: 'none' });
-        }
+        if (overlayRef.current) gsap.set(overlayRef.current, { pointerEvents: 'none' });
       },
     });
-
     gsap.to(drawerRef.current, {
       yPercent: 100,
       duration: 0.28,
@@ -131,13 +120,16 @@ function MobileDrawer({ navItems, onNavigate, onLogout, user }) {
     });
   };
 
-  const activeItem = navItems.find(
-    i => location.pathname === i.to || location.pathname.startsWith(i.to + '/')
-  );
+  // FIX: exact match first, then prefix only for non-root paths
+  const activeItem = navItems.find(i => {
+    if (location.pathname === i.to) return true;
+    if (i.to !== '/' && location.pathname.startsWith(i.to + '/')) return true;
+    return false;
+  });
 
   return (
     <>
-      {/* ── Fixed handle bar ─────────────────────────────────────── */}
+      {/* Handle bar */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur-md border-t border-slate-800">
         <button
           onClick={open ? closeDrawer : openDrawer}
@@ -153,11 +145,8 @@ function MobileDrawer({ navItems, onNavigate, onLogout, user }) {
               {activeItem?.label || 'Menu'}
             </span>
           </div>
-
           <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-500 font-display">
-              {open ? 'Close' : 'Menu'}
-            </span>
+            <span className="text-xs text-slate-500 font-display">{open ? 'Close' : 'Menu'}</span>
             <svg
               className={`w-5 h-5 text-slate-400 transition-transform duration-300 ${open ? 'rotate-180' : ''}`}
               fill="none" stroke="currentColor" viewBox="0 0 24 24"
@@ -168,8 +157,7 @@ function MobileDrawer({ navItems, onNavigate, onLogout, user }) {
         </button>
       </div>
 
-      {/* ── Overlay — always mounted, opacity controlled by GSAP ─── */}
-      {/* z-index 45: above handle (40) but below drawer (50)        */}
+      {/* Overlay */}
       <div
         ref={overlayRef}
         className="lg:hidden fixed inset-0 bg-black/60"
@@ -177,33 +165,25 @@ function MobileDrawer({ navItems, onNavigate, onLogout, user }) {
         onClick={closeDrawer}
       />
 
-      {/*
-        ── Sliding drawer — always mounted, transform owned by GSAP ─
-        KEY LAYOUT DECISIONS:
-        • bottom: 56px  → top edge of handle bar; drawer grows upward from here
-        • top: auto     → do NOT set a top value; height is determined by content
-        • max-height    → caps at 75vh so it never overflows the screen
-        • overflow-y-auto → scroll inside when content exceeds max-height
-        • NO inline transform → GSAP owns yPercent exclusively
-        • z-index 50    → above overlay (45) and handle (40)
-      */}
+      {/* Drawer — GSAP owns yPercent, never set inline transform */}
       <div
         ref={drawerRef}
         className="lg:hidden fixed left-0 right-0 z-50 bg-slate-900 border-t border-slate-700/80 rounded-t-2xl overflow-y-auto"
-        style={{ bottom: '56px', maxHeight: 'calc(75vh)' }}
+        style={{
+          bottom: '56px',
+          maxHeight: 'calc(75vh)',
+          paddingBottom: 'env(safe-area-inset-bottom, 0px)'
+        }}
       >
-        {/* Drag handle pill */}
         <div className="flex justify-center pt-3 pb-1">
           <div className="w-10 h-1 rounded-full bg-slate-700"/>
         </div>
 
-        {/* User info */}
         <div className="px-5 py-3 border-b border-slate-800/80">
           <p className="text-xs text-slate-500 font-mono truncate">{user?.email}</p>
           <p className="text-xs text-slate-600 mt-0.5">{user?.houseName || 'Admin'}</p>
         </div>
 
-        {/* Nav items */}
         <nav className="px-3 py-3 flex flex-col gap-1">
           {navItems.map(item => (
             <NavLink
@@ -232,7 +212,6 @@ function MobileDrawer({ navItems, onNavigate, onLogout, user }) {
           ))}
         </nav>
 
-        {/* Logout */}
         <div className="px-3 pb-5 pt-1 border-t border-slate-800/80 mt-1">
           <button
             onClick={() => { closeDrawer(); onLogout(); }}
@@ -251,7 +230,6 @@ function MobileDrawer({ navItems, onNavigate, onLogout, user }) {
   );
 }
 
-// ── Main layout ────────────────────────────────────────────────────
 export default function Layout() {
   const { logout, user } = useAuthStore();
   const navigate = useNavigate();
@@ -263,20 +241,18 @@ export default function Layout() {
   };
 
   const navItems = [
-    { to: '/dashboard',   label: 'Dashboard',   icon: 'dashboard' },
-    { to: '/houses',      label: 'Houses',       icon: 'houses'    },
-    { to: '/water-input', label: 'Water Input',  icon: 'water'     },
-    { to: '/invoices',    label: 'Invoices',     icon: 'invoices'  },
-    { to: '/payment',     label: 'Pay',          icon: 'payment'   },
-    { to: '/settings',    label: 'Settings',     icon: 'settings'  },
+    { to: '/dashboard',   label: 'Dashboard',  icon: 'dashboard' },
+    { to: '/houses',      label: 'Houses',      icon: 'houses'    },
+    { to: '/water-input', label: 'Water Input', icon: 'water'     },
+    { to: '/invoices',    label: 'Invoices',    icon: 'invoices'  },
+    { to: '/payment',     label: 'Pay',         icon: 'payment'   },
+    { to: '/settings',    label: 'Settings',    icon: 'settings'  },
   ];
 
   return (
     <div className="flex h-screen overflow-hidden">
-
-      {/* ── Desktop sidebar ─────────────────────────────────────── */}
+      {/* Desktop sidebar */}
       <aside className="hidden lg:flex flex-col w-64 bg-slate-900/50 border-r border-slate-800/80 p-4 gap-2 flex-shrink-0">
-        {/* Logo */}
         <div className="flex items-center gap-3 px-2 py-3 mb-4">
           <div className="w-9 h-9 rounded-xl bg-ocean-500/20 border border-ocean-500/40 flex items-center justify-center">
             <svg className="w-5 h-5 text-ocean-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -307,7 +283,6 @@ export default function Layout() {
           ))}
         </nav>
 
-        {/* User info */}
         <div className="mt-auto pt-4 border-t border-slate-800">
           <div className="px-3 py-2 mb-2">
             <div className="text-xs text-slate-500 font-mono truncate">{user?.email}</div>
@@ -321,14 +296,8 @@ export default function Layout() {
         </div>
       </aside>
 
-      {/* ── Mobile drawer ───────────────────────────────────────── */}
-      <MobileDrawer
-        navItems={navItems}
-        onLogout={handleLogout}
-        user={user}
-      />
+      <MobileDrawer navItems={navItems} onLogout={handleLogout} user={user} />
 
-      {/* ── Main content ────────────────────────────────────────── */}
       <main className="flex-1 overflow-y-auto pb-20 lg:pb-0">
         <div className="max-w-5xl mx-auto px-4 py-6 page-enter">
           <Outlet />
