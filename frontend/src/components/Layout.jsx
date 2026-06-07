@@ -69,14 +69,12 @@ function MobileDrawer({ navItems, onNavigate, onLogout, user }) {
   }, [location.pathname]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const openDrawer = () => {
-    // FIX: guard both open state AND animation state
     if (open || isAnimatingRef.current) return;
     if (!drawerRef.current || !overlayRef.current) return;
 
     isAnimatingRef.current = true;
     setOpen(true);
 
-    // FIX: kill any in-progress tweens before starting new ones
     gsap.killTweensOf([drawerRef.current, overlayRef.current]);
 
     gsap.set(overlayRef.current, { pointerEvents: 'auto' });
@@ -90,7 +88,6 @@ function MobileDrawer({ navItems, onNavigate, onLogout, user }) {
   };
 
   const closeDrawer = () => {
-    // FIX: guard — only close if actually open
     if (!open || isAnimatingRef.current) return;
     if (!drawerRef.current || !overlayRef.current) {
       setOpen(false);
@@ -98,8 +95,8 @@ function MobileDrawer({ navItems, onNavigate, onLogout, user }) {
     }
 
     isAnimatingRef.current = true;
+    setOpen(false);
 
-    // FIX: kill any in-progress tweens before starting close
     gsap.killTweensOf([drawerRef.current, overlayRef.current]);
 
     gsap.to(overlayRef.current, {
@@ -115,7 +112,6 @@ function MobileDrawer({ navItems, onNavigate, onLogout, user }) {
       ease: 'power2.in',
       onComplete: () => {
         isAnimatingRef.current = false;
-        if (isMountedRef.current) setOpen(false);
       },
     });
   };

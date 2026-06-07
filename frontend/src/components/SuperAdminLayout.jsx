@@ -77,6 +77,7 @@ function MobileDrawer({ navItems, onLogout, user }) {
     }
 
     isAnimatingRef.current = true;
+    setOpen(false);
 
     gsap.killTweensOf([drawerRef.current, overlayRef.current]);
     gsap.to(overlayRef.current, {
@@ -92,7 +93,6 @@ function MobileDrawer({ navItems, onLogout, user }) {
       ease: 'power2.in',
       onComplete: () => {
         isAnimatingRef.current = false;
-        if (isMountedRef.current) setOpen(false);
       },
     });
   };
@@ -105,7 +105,7 @@ function MobileDrawer({ navItems, onLogout, user }) {
   return (
     <>
       {/* Handle bar */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur-md border-t border-slate-800">
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-slate-900/95 backdrop-blur-md border-t border-slate-800">
         <button
           onClick={open ? closeDrawer : openDrawer}
           className="w-full flex items-center justify-between px-5 py-3.5 active:bg-slate-800/60 transition-colors"
@@ -139,14 +139,14 @@ function MobileDrawer({ navItems, onLogout, user }) {
       <div
         ref={overlayRef}
         className="lg:hidden fixed inset-0 bg-black/60"
-        style={{ zIndex: 45, opacity: 0, pointerEvents: 'none' }}
+        style={{ zIndex: 51, opacity: 0, pointerEvents: 'none' }}
         onClick={closeDrawer}
       />
 
       {/* Drawer */}
       <div
         ref={drawerRef}
-        className="lg:hidden fixed left-0 right-0 z-50 bg-slate-900 border-t border-slate-700/80 rounded-t-2xl overflow-y-auto"
+        className="lg:hidden fixed left-0 right-0 z-55 bg-slate-900 border-t border-slate-700/80 rounded-t-2xl overflow-y-auto"
         style={{
           bottom: '56px',
           maxHeight: 'calc(75vh)',
