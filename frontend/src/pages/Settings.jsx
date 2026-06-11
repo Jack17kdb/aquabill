@@ -130,7 +130,6 @@ export default function Settings() {
     }, 0);
   };
 
-  // Live preview using the typed template or default
   const previewMessage = (template || defaultTemplate)
     .replace(/{tenantName}/g,      'John Kamau')
     .replace(/{houseNumber}/g,     'A3')
@@ -152,7 +151,7 @@ export default function Settings() {
         <div className="card p-5">
           <h2 className="font-display font-semibold text-white mb-1">Water Rate</h2>
           <p className="text-sm text-slate-500 mb-4">Price per cubic meter / unit of water</p>
-          <div className="flex gap-3 items-end">
+          <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-end">
             <div className="flex-1">
               <label className="label">Price per Unit (KES)</label>
               <input type="number" min="1" value={pricePerUnit}
@@ -160,7 +159,7 @@ export default function Settings() {
                 className="input-field" placeholder="50" />
             </div>
             <button onClick={handleApplyPriceToAll} disabled={saving || loading}
-              className="btn-primary flex-shrink-0 flex items-center gap-2">
+              className="btn-primary flex-shrink-0 flex items-center justify-center gap-2 py-3 sm:py-2.5">
               {saving && <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>}
               Apply to All Houses
             </button>
@@ -205,13 +204,13 @@ export default function Settings() {
             disabled={templateLoading}
           />
 
-          <div className="flex gap-2 mt-3">
+          <div className="flex flex-col sm:flex-row gap-2 mt-3">
             <button onClick={handleSaveTemplate} disabled={savingTemplate || templateLoading}
-              className="btn-primary flex items-center gap-2">
+              className="btn-primary flex items-center justify-center gap-2 py-3 sm:py-2">
               {savingTemplate && <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>}
               Save Template
             </button>
-            <button onClick={handleResetTemplate} className="btn-secondary text-sm">
+            <button onClick={handleResetTemplate} className="btn-secondary text-sm py-3 sm:py-2">
               Reset to Default
             </button>
           </div>
@@ -231,17 +230,17 @@ export default function Settings() {
         </div>
 
         {/* Caretaker management */}
-        <div className="card p-5">
-          <div className="flex items-center justify-between mb-1">
+        <div className="card p-4 sm:p-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-2">
             <div>
-              <h2 className="font-display font-semibold text-white">Caretaker Accounts</h2>
-              <p className="text-sm text-slate-500 mt-0.5">
+              <h2 className="font-display font-semibold text-white text-base sm:text-lg">Caretaker Accounts</h2>
+              <p className="text-xs sm:text-sm text-slate-500 mt-0.5 max-w-2xl">
                 Caretakers can add/edit houses and submit readings — but cannot send WhatsApp messages or access invoices.
               </p>
             </div>
             <button
               onClick={() => setShowAddCaretaker(s => !s)}
-              className="btn-primary flex items-center gap-2 text-sm py-2 px-4 flex-shrink-0 ml-4"
+              className="btn-primary flex items-center justify-center gap-2 text-sm py-2.5 px-4 w-full sm:w-auto flex-shrink-0"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"/>
@@ -253,7 +252,8 @@ export default function Settings() {
           {showAddCaretaker && (
             <form onSubmit={handleAddCaretaker} className="mt-4 bg-slate-800/40 rounded-xl p-4 border border-slate-700/50 flex flex-col gap-3">
               <p className="text-xs font-display font-semibold text-slate-400 uppercase tracking-wide">New Caretaker</p>
-              <div className="grid grid-cols-2 gap-3">
+              
+              <div className="flex flex-col sm:grid sm:grid-cols-2 gap-3">
                 <div>
                   <label className="label">Name</label>
                   <input className="input-field" value={caretakerForm.caretakerName}
@@ -267,7 +267,8 @@ export default function Settings() {
                     placeholder="0712345678" />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+
+              <div className="flex flex-col sm:grid sm:grid-cols-2 gap-3">
                 <div>
                   <label className="label">Email *</label>
                   <input className="input-field" type="email" value={caretakerForm.email}
@@ -281,46 +282,79 @@ export default function Settings() {
                     placeholder="Min 6 chars" required minLength={6} />
                 </div>
               </div>
-              <div className="flex gap-2 pt-1">
-                <button type="submit" disabled={savingCaretaker} className="btn-primary flex items-center gap-2">
+
+              <div className="flex flex-col sm:flex-row gap-2 pt-2">
+                <button type="submit" disabled={savingCaretaker} className="btn-primary order-1 sm:order-none flex items-center justify-center gap-2 py-3 sm:py-2">
                   {savingCaretaker && <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>}
                   Create Account
                 </button>
-                <button type="button" onClick={() => setShowAddCaretaker(false)} className="btn-secondary">Cancel</button>
+                <button type="button" onClick={() => setShowAddCaretaker(false)} className="btn-secondary py-3 sm:py-2">Cancel</button>
               </div>
             </form>
           )}
 
           {caretakers.length === 0 ? (
-            <div className="mt-4 text-center py-8 bg-slate-800/30 rounded-xl border border-slate-700/30">
+            <div className="mt-4 text-center py-8 bg-slate-800/30 rounded-xl border border-slate-700/30 px-4">
               <p className="text-slate-500 text-sm">No caretaker accounts yet.</p>
               <p className="text-slate-600 text-xs mt-1">Add one above if you want to delegate house management.</p>
             </div>
           ) : (
-            <div className="mt-4 flex flex-col gap-2">
+            <div className="mt-4 flex flex-col gap-3">
               {caretakers.map(ct => (
-                <div key={ct._id} className={`flex items-center gap-3 px-4 py-3 rounded-xl border ${ct.isActive ? 'bg-slate-800/40 border-slate-700/40' : 'bg-slate-900/40 border-slate-800/40 opacity-60'}`}>
-                  <div className="w-9 h-9 rounded-lg bg-amber-500/15 border border-amber-500/30 flex items-center justify-center flex-shrink-0">
-                    <svg className="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                    </svg>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-display font-medium text-white text-sm">{ct.caretakerName || 'Unnamed'}</span>
-                      <span className={`badge text-xs border ${ct.isActive ? 'bg-emerald-900/40 text-emerald-400 border-emerald-800/40' : 'bg-slate-800 text-slate-500 border-slate-700'}`}>
-                        {ct.isActive ? 'Active' : 'Suspended'}
-                      </span>
+                <div 
+                  key={ct._id} 
+                  className={`flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-xl border transition-all ${
+                    ct.isActive 
+                      ? 'bg-slate-800/40 border-slate-700/40' 
+                      : 'bg-slate-900/40 border-slate-800/40 opacity-60'
+                  }`}
+                >
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center flex-shrink-0">
+                      <svg className="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                      </svg>
                     </div>
-                    <p className="text-xs text-slate-500 font-mono mt-0.5 truncate">{ct.email}</p>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <span className="font-display font-semibold text-white text-sm sm:text-base truncate">
+                          {ct.caretakerName || 'Unnamed Caretaker'}
+                        </span>
+                        <span className={`badge text-[11px] font-medium border px-2 py-0.5 rounded-md ${
+                          ct.isActive 
+                            ? 'bg-emerald-950/50 text-emerald-400 border-emerald-800/30' 
+                            : 'bg-slate-800 text-slate-400 border-slate-700'
+                        }`}>
+                          {ct.isActive ? 'Active' : 'Suspended'}
+                        </span>
+                      </div>
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-x-3 text-slate-500 text-xs font-mono mt-1 gap-y-0.5">
+                        <span className="truncate">{ct.email}</span>
+                        {ct.caretakerPhone && (
+                          <span className="text-slate-600 sm:before:content-['•'] sm:before:mr-2">
+                            {ct.caretakerPhone}
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex gap-1.5 flex-shrink-0">
-                    <button onClick={() => handleToggleCaretaker(ct)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-display font-medium border transition-all ${ct.isActive ? 'bg-amber-900/30 text-amber-400 border-amber-800/40 hover:bg-amber-800/40' : 'bg-emerald-900/30 text-emerald-400 border-emerald-800/40 hover:bg-emerald-800/40'}`}>
+
+                  {/* Operational Buttons Stacked on Mobile, Inline on Desktop */}
+                  <div className="flex gap-2 sm:gap-1.5 border-t border-slate-800/60 sm:border-0 pt-3 sm:pt-0 mt-1 sm:mt-0 flex-row justify-end">
+                    <button 
+                      onClick={() => handleToggleCaretaker(ct)}
+                      className={`flex-1 sm:flex-none px-4 sm:px-3 py-2.5 sm:py-1.5 rounded-lg text-xs font-display font-medium border transition-all text-center ${
+                        ct.isActive 
+                          ? 'bg-amber-900/20 text-amber-400 border-amber-800/30 hover:bg-amber-800/30' 
+                          : 'bg-emerald-900/20 text-emerald-400 border-emerald-800/30 hover:bg-emerald-800/30'
+                      }`}
+                    >
                       {ct.isActive ? 'Suspend' : 'Activate'}
                     </button>
-                    <button onClick={() => handleDeleteCaretaker(ct)}
-                      className="px-3 py-1.5 rounded-lg text-xs font-display font-medium bg-red-900/30 text-red-400 border border-red-800/40 hover:bg-red-800/40 transition-all">
+                    <button 
+                      onClick={() => handleDeleteCaretaker(ct)}
+                      className="flex-1 sm:flex-none px-4 sm:px-3 py-2.5 sm:py-1.5 rounded-lg text-xs font-display font-medium bg-red-900/20 text-red-400 border border-red-800/30 hover:bg-red-800/30 transition-all text-center"
+                    >
                       Remove
                     </button>
                   </div>
